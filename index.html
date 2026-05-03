@@ -1,0 +1,1500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComputeX — CS Presentation</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ============================================================
+// 🔥 PASTE YOUR FIREBASE CONFIG HERE
+// Go to: console.firebase.google.com → Your Project → Project Settings → Your apps → Config
+// ============================================================
+const FIREBASE_CONFIG = window._CX_FIREBASE_CONFIG || null;
+// Example (replace with yours):
+// const FIREBASE_CONFIG = {
+//   apiKey: "AIza...",
+//   authDomain: "your-project.firebaseapp.com",
+//   databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+//   projectId: "your-project",
+//   storageBucket: "your-project.appspot.com",
+//   messagingSenderId: "123456",
+//   appId: "1:123456:web:abc"
+// };
+
+window._FB_READY = false;
+window._FB_DB = null;
+
+if (FIREBASE_CONFIG && FIREBASE_CONFIG.databaseURL) {
+  try {
+    const app = initializeApp(FIREBASE_CONFIG);
+    const db = getDatabase(app);
+    window._FB_DB = db;
+
+    const slidesRef = ref(db, 'computex/slides');
+    const membersRef = ref(db, 'computex/members');
+
+    // Listen for real-time changes from ANY computer
+    onValue(slidesRef, (snap) => {
+      if (snap.exists()) {
+        window.APP.slides = snap.val();
+        if (window._APP_READY) {
+          window.renderSlideThumbs();
+          window.initApp();
+          if (typeof window.devSlIdx !== 'undefined' && document.getElementById('page-developer').classList.contains('active')) {
+            window.devRenderList();
+            window.devPickSlide(window.devSlIdx);
+          }
+          window.syncMsg('🔄 Synced from Firebase');
+        }
+      }
+    });
+
+    onValue(membersRef, (snap) => {
+      if (snap.exists()) {
+        window.APP.members = snap.val();
+        if (window._APP_READY && document.getElementById('page-members').classList.contains('active')) {
+          window.renderMembers();
+        }
+      }
+    });
+
+    window._FB_READY = true;
+    console.log('✅ Firebase connected — real-time sync active');
+  } catch(e) {
+    console.warn('Firebase init failed:', e.message);
+  }
+}
+
+// Expose save functions globally so non-module scripts can call them
+window._fbSaveSlides  = async () => {
+  if (!window._FB_DB) return false;
+  await set(ref(window._FB_DB, 'computex/slides'),  window.APP.slides);
+  return true;
+};
+window._fbSaveMembers = async () => {
+  if (!window._FB_DB) return false;
+  await set(ref(window._FB_DB, 'computex/members'), window.APP.members);
+  return true;
+};
+</script>
+
+<script id="cx-data" type="application/json">
+{
+  "meta": {
+    "title": "ComputeX",
+    "subtitle": "CS PRESENTATION 2025",
+    "heroSub": "Exploring algorithms, artificial intelligence, systems architecture, and the digital revolution shaping our world.",
+    "department": "CS DEPT — 2025"
+  },
+  "topics": [
+    { "icon": "🧠", "title": "Artificial Intelligence", "desc": "Machine learning, neural networks, and the algorithms driving intelligent systems.", "mod": "01" },
+    { "icon": "🔐", "title": "Cybersecurity", "desc": "Encryption, ethical hacking, network security, and digital defense strategies.", "mod": "02" },
+    { "icon": "☁️", "title": "Cloud Computing", "desc": "Distributed systems, containerization, serverless architecture.", "mod": "03" },
+    { "icon": "⚡", "title": "Algorithms & DS", "desc": "Sorting, graphs, dynamic programming — the backbone of CS.", "mod": "04" },
+    { "icon": "🌐", "title": "Networks & OS", "desc": "TCP/IP protocols, operating system kernels, and process management.", "mod": "05" },
+    { "icon": "⚛️", "title": "Quantum Computing", "desc": "Qubits, superposition, entanglement — the next computational era.", "mod": "06" }
+  ],
+  "members": [
+    { "id":1,"emoji":"👨‍💻","name":"Pratik Adhikari","role":"Lead Presenter","topic":"Artificial Intelligence","bio":"Specializes in AI and ML. Led research on neural network architectures and deep learning frameworks.","content":"Neural networks are computational models inspired by the brain, consisting of layers of interconnected nodes that process data through weighted connections.","points":["Supervised, Unsupervised & Reinforcement Learning","CNNs for Computer Vision","Transformers & Attention Mechanisms","Training: overfitting, vanishing gradients","Real-world AI in healthcare, finance, NLP"],"skills":["Python","TensorFlow","ML"]},
+    { "id":2,"emoji":"👩‍💻","name":"Bijay Neupane","role":"Security Expert","topic":"Cybersecurity","bio":"Expert in cybersecurity and networking. Researched threat landscapes and encryption standards.","content":"Cybersecurity protects networks, devices, and data from attack or unauthorized access.","points":["CIA Triad: Confidentiality, Integrity, Availability","Public Key Infrastructure (PKI)","Attack vectors: SQL injection, XSS, MITM","Zero-day vulnerabilities and patch management","Ethical hacking and penetration testing"],"skills":["Security","Networking","Linux"]},
+    { "id":3,"emoji":"👨‍🎓","name":"Krischal Adhikari","role":"Slide Designer","topic":"Web & Frontend","bio":"Frontend developer and designer. Built this entire presentation using pure HTML, CSS, and JS.","content":"Modern frontend development combines HTML structure, CSS styling, and JavaScript interactivity.","points":["DOM manipulation & events","CSS Grid, Flexbox & animations","JavaScript async & event loop","Web performance optimization","Accessibility (WCAG) and semantic HTML"],"skills":["HTML/CSS","JS","Design"]},
+    { "id":4,"emoji":"👩‍🔬","name":"Aaayan Pokhrel","role":"Cloud Architect","topic":"Cloud Computing","bio":"Focused on cloud architecture and distributed systems.","content":"Cloud computing delivers servers, storage, databases, networking, and software over the internet.","points":["IaaS / PaaS / SaaS service models","Docker containers and image layers","Kubernetes orchestration and pod scheduling","CAP theorem: Consistency, Availability, Partition","Serverless computing and FaaS"],"skills":["Cloud","Docker","AWS"]},
+    { "id":5,"emoji":"👨‍🏫","name":"Sujan Pandey","role":"Algorithm Analyst","topic":"Algorithms & DSA","bio":"Algorithms and data structures enthusiast.","content":"Algorithms are step-by-step procedures for computational problems. Big-O notation describes efficiency.","points":["Big-O notation and complexity analysis","Sorting: QuickSort, MergeSort, HeapSort","Search: Binary Search, BFS, DFS, A*","Trees: BST, AVL, Red-Black, Tries","Graphs: Dijkstra, Bellman-Ford, Floyd-Warshall"],"skills":["C++","Java","DSA"]}
+  ],
+  "slides": [
+    { "id":1,"label":"INTRODUCTION","title":"Welcome to <em>ComputeX</em>","body":"Exploring the frontiers of computer science — from AI to quantum computing. Presented by the CS Department 2025.","layout":"simple","titleSize":64,"titleColor":"#eaf6ff","bodySize":16,"bodyColor":"#a8c8d8","images":[],"imageInterval":4 },
+    { "id":2,"label":"MODULE 01","title":"Artificial <em>Intelligence</em>","body":"Neural networks, deep learning, and the rise of intelligent systems. Machine learning is transforming every industry on the planet.","layout":"simple","titleSize":58,"titleColor":"#00e5ff","bodySize":16,"bodyColor":"#a8c8d8","images":[],"imageInterval":4 },
+    { "id":3,"label":"MODULE 02","title":"Cyber<em>security</em>","body":"Encryption, ethical hacking, and digital defense. The CIA triad — Confidentiality, Integrity, Availability — forms the backbone of modern security.","layout":"simple","titleSize":58,"titleColor":"#eaf6ff","bodySize":16,"bodyColor":"#a8c8d8","images":[],"imageInterval":4 },
+    { "id":4,"label":"MODULE 03","title":"Cloud <em>Computing</em>","body":"Distributed systems, containers, and serverless architecture powering modern applications at scale across the globe.","layout":"simple","titleSize":58,"titleColor":"#00ff88","bodySize":16,"bodyColor":"#a8c8d8","images":[],"imageInterval":4 },
+    { "id":5,"label":"MODULE 04","title":"Algorithms <em>& DSA</em>","body":"Big-O complexity, sorting, graphs, and dynamic programming — the mathematical backbone of every software system.","layout":"simple","titleSize":58,"titleColor":"#eaf6ff","bodySize":16,"bodyColor":"#a8c8d8","images":[],"imageInterval":4 },
+    { "id":6,"label":"CONCLUSION","title":"The Future <em>Starts Now</em>","body":"From quantum computing to artificial general intelligence — the next era of computing is already being written. Thank you.","layout":"simple","titleSize":64,"titleColor":"#00e5ff","bodySize":18,"bodyColor":"#eaf6ff","images":[],"imageInterval":4 }
+  ]
+}
+</script>
+
+<style>
+:root{
+  --bg:#03070d;--bg2:#060f1a;--panel:#08151f;
+  --border:#0e2535;--border2:#16344d;
+  --cyan:#00e5ff;--cyan2:#00b8d4;--green:#00ff88;
+  --orange:#ff6b35;--text:#a8c8d8;--muted:#3a6478;
+  --white:#eaf6ff;--red:#ff3b5c;
+  --fh:'Bebas Neue',sans-serif;--fb:'Outfit',sans-serif;--fm:'DM Mono',monospace;
+  --sidebar:200px;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--fb);overflow-x:hidden;cursor:none}
+body::before{content:'';position:fixed;inset:0;z-index:1000;pointer-events:none;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,229,255,.007) 3px,rgba(0,229,255,.007) 4px)}
+
+/* FIREBASE BANNER */
+.fb-banner{position:fixed;top:0;left:0;right:0;z-index:99999;background:linear-gradient(90deg,#ff6b35,#ff3b5c);color:#fff;font-family:var(--fm);font-size:10px;letter-spacing:1px;padding:9px 20px;display:flex;align-items:center;gap:12px;line-height:1.4}
+.fb-banner a{color:#fff;font-weight:700;text-decoration:underline;cursor:pointer}
+.fb-banner button{margin-left:auto;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.5);color:#fff;font-family:var(--fm);font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:1px}
+.fb-banner.fb-ok{background:linear-gradient(90deg,#006b40,#00a060)}
+.fb-banner.fb-hidden{display:none}
+
+/* CONTENT IMAGES */
+.slide-content-imgs{display:flex;flex-wrap:wrap;gap:14px;margin-top:20px;align-items:flex-start}
+.slide-content-img-wrap{display:inline-flex;flex-direction:column;gap:5px}
+.slide-content-img-wrap img{display:block;border:1px solid rgba(0,229,255,.25);object-fit:cover;max-width:100%}
+.slide-content-img-wrap.align-center{align-items:center;width:100%}
+.slide-content-img-wrap.align-right{margin-left:auto}
+.slide-content-img-cap{font-family:var(--fm);font-size:9px;color:var(--muted);letter-spacing:1px;text-align:center}
+
+/* CONTENT IMAGE EDITOR CARDS */
+.cimg-card{background:var(--panel);border:1px solid var(--border);padding:10px;margin-bottom:8px;display:grid;grid-template-columns:80px 1fr;gap:10px;align-items:start}
+.cimg-card img{width:80px;height:54px;object-fit:cover;border:1px solid var(--border2)}
+.cimg-card-controls{display:flex;flex-direction:column;gap:5px}
+.cimg-card-row{display:flex;align-items:center;gap:6px}
+.cimg-card-label{font-family:var(--fm);font-size:7px;color:var(--muted);letter-spacing:1px;min-width:42px;flex-shrink:0}
+.cimg-card-inp{flex:1;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:9px;padding:3px 6px;outline:none}
+.cimg-card-inp:focus{border-color:var(--cyan)}
+.cimg-card-del{padding:3px 8px;background:transparent;border:1px solid var(--red);color:var(--red);font-family:var(--fm);font-size:7px;cursor:none;transition:all .2s;white-space:nowrap}
+.cimg-card-del:hover{background:var(--red);color:#fff}
+.cimg-align-btns{display:flex;gap:3px}
+.cimg-align-btn{padding:3px 7px;background:var(--bg);border:1px solid var(--border);color:var(--muted);font-family:var(--fm);font-size:8px;cursor:none;transition:all .15s}
+.cimg-align-btn.on,.cimg-align-btn:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.08)}
+
+.cur{width:8px;height:8px;background:var(--cyan);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;box-shadow:0 0 16px var(--cyan),0 0 30px rgba(0,229,255,.4);transition:transform .1s}
+.cur-ring{width:32px;height:32px;border:1px solid rgba(0,229,255,.5);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transition:all .2s ease}
+.cur.click{transform:scale(2)}
+.ptc{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.pt{position:absolute;border-radius:50%;opacity:0;animation:ptfloat var(--d) var(--dl) infinite linear}
+@keyframes ptfloat{0%{transform:translateY(100vh) translateX(0);opacity:0}8%{opacity:.7}92%{opacity:.15}100%{transform:translateY(-30px) translateX(var(--dx));opacity:0}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(0,229,255,.3)}50%{box-shadow:0 0 50px rgba(0,229,255,.7),0 0 80px rgba(0,229,255,.3)}}
+@keyframes shine{0%{left:-75%}100%{left:125%}}
+@keyframes slideInLeft{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+
+/* SIDEBAR */
+.sidebar{position:fixed;left:0;top:0;height:100vh;width:var(--sidebar);background:linear-gradient(180deg,#05101a 0%,#030912 100%);border-right:1px solid var(--border2);display:flex;flex-direction:column;z-index:500}
+.sidebar::after{content:'';position:absolute;right:-1px;top:0;bottom:0;width:1px;background:linear-gradient(180deg,transparent,var(--cyan),transparent);opacity:.3}
+.sb-logo{padding:22px 18px 16px;border-bottom:1px solid var(--border)}
+.sb-tag{font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:8px;opacity:.7}
+.sb-title{font-family:var(--fh);font-size:28px;letter-spacing:3px;color:var(--white);line-height:1}
+.sb-title span{color:var(--cyan);text-shadow:0 0 20px var(--cyan)}
+.nav-links{flex:1;padding:12px 0;list-style:none}
+.nav-links li a{display:flex;align-items:center;gap:10px;padding:12px 18px;text-decoration:none;color:var(--muted);font-family:var(--fm);font-size:9px;letter-spacing:2px;text-transform:uppercase;transition:all .25s;border-left:2px solid transparent}
+.nav-links li a .ic{font-size:14px;width:18px;text-align:center}
+.nav-links li a:hover,.nav-links li a.active{color:var(--cyan);border-left-color:var(--cyan);background:linear-gradient(90deg,rgba(0,229,255,.08),transparent)}
+.nav-links li a .badge{margin-left:auto;font-size:6px;background:var(--cyan);color:var(--bg);padding:2px 5px;font-weight:700}
+.sb-present{margin:0 14px 14px;padding:14px 10px;background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:var(--bg);font-family:var(--fh);font-size:20px;letter-spacing:4px;border:none;cursor:none;width:calc(100% - 28px);position:relative;overflow:hidden;animation:glow 2.5s ease-in-out infinite;transition:transform .2s}
+.sb-present::after{content:'▷▷';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:11px;opacity:.6}
+.sb-present:hover{transform:scale(1.03)}
+.sb-foot{padding:10px 18px;border-top:1px solid var(--border);font-family:var(--fm);font-size:8px;color:var(--muted);letter-spacing:1px}
+.status-dot{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite;display:inline-block;margin-right:5px}
+
+/* MAIN */
+.main{margin-left:var(--sidebar);min-height:100vh}
+.topbar{height:48px;background:rgba(3,7,13,.94);backdrop-filter:blur(16px);border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 30px;position:sticky;top:0;z-index:400}
+.tb-bread{font-family:var(--fm);font-size:9px;color:var(--muted);letter-spacing:2px}
+.tb-bread span{color:var(--cyan)}
+.tb-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.tb-time{font-family:var(--fm);font-size:10px;color:var(--cyan);letter-spacing:2px}
+.tb-present-btn{padding:8px 22px;font-family:var(--fh);font-size:18px;letter-spacing:3px;background:linear-gradient(135deg,var(--cyan) 0%,#007acc 100%);color:var(--bg);border:none;cursor:none;position:relative;overflow:hidden;animation:glow 2s infinite;display:flex;align-items:center;gap:8px;transition:transform .15s,box-shadow .15s}
+.tb-present-btn::before{content:'';position:absolute;top:-50%;left:-75%;width:50%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);animation:shine 3s infinite}
+.tb-present-btn:hover{transform:scale(1.05);box-shadow:0 0 40px rgba(0,229,255,.6)}
+
+/* PAGES */
+.page{display:none;animation:fadeUp .3s ease}
+.page.active{display:block}
+
+/* HOME */
+.hero{min-height:calc(100vh - 48px);display:flex;flex-direction:column;justify-content:center;padding:60px 48px 40px;position:relative;overflow:hidden}
+.hero-grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.03) 1px,transparent 1px);background-size:48px 48px}
+.hero-orb{position:absolute;border-radius:50%;pointer-events:none;background:radial-gradient(circle,rgba(0,229,255,.12) 0%,transparent 70%)}
+.hero-orb1{width:700px;height:700px;right:-200px;top:-200px}
+.hero-orb2{width:400px;height:400px;left:-150px;bottom:-100px;background:radial-gradient(circle,rgba(0,255,136,.07) 0%,transparent 70%)}
+.hero-kicker{font-family:var(--fm);font-size:9px;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;display:flex;align-items:center;gap:10px;margin-bottom:22px;animation:slideInLeft .6s ease both}
+.hero-kicker::before{content:'';width:30px;height:1px;background:var(--cyan)}
+.hero h1{font-family:var(--fh);font-size:clamp(52px,7vw,100px);letter-spacing:4px;color:var(--white);line-height:.9;margin-bottom:0;animation:fadeUp .6s .1s ease both}
+.hero h1 .line2{color:transparent;-webkit-text-stroke:1.5px rgba(0,229,255,.6);display:block}
+.hero h1 .line3{color:var(--cyan);display:block;text-shadow:0 0 60px rgba(0,229,255,.5)}
+.hero-sub{font-family:var(--fb);font-size:13px;color:var(--muted);line-height:1.8;max-width:480px;margin:26px 0 38px;animation:fadeUp .6s .2s ease both}
+.hero-actions{display:flex;align-items:center;gap:16px;flex-wrap:wrap;animation:fadeUp .6s .3s ease both}
+.btn-present{padding:16px 40px;font-family:var(--fh);font-size:26px;letter-spacing:5px;background:linear-gradient(135deg,var(--cyan) 0%,#00a0c4 50%,var(--cyan) 100%);background-size:200% 100%;color:var(--bg);border:none;cursor:none;position:relative;overflow:hidden;animation:glow 2.5s ease-in-out infinite;transition:transform .2s,box-shadow .2s;display:flex;align-items:center;gap:12px}
+.btn-present::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);animation:shine 2.5s infinite}
+.btn-present:hover{transform:scale(1.04) translateY(-2px);box-shadow:0 20px 60px rgba(0,229,255,.5)}
+.btn-sec{padding:14px 26px;font-family:var(--fb);font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;background:transparent;color:var(--text);border:1px solid var(--border2);cursor:none;transition:all .25s;text-decoration:none}
+.btn-sec:hover{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.06)}
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.stat-item{background:var(--panel);padding:22px 24px;transition:background .2s;position:relative;overflow:hidden}
+.stat-item::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--cyan),transparent);transform:scaleX(0);transform-origin:left;transition:transform .4s}
+.stat-item:hover::before{transform:scaleX(1)}
+.stat-item:hover{background:rgba(0,229,255,.04)}
+.stat-n{font-family:var(--fh);font-size:42px;letter-spacing:2px;color:var(--white);line-height:1}
+.stat-n em{color:var(--cyan);font-style:normal}
+.stat-l{font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase;margin-top:4px}
+.section{padding:48px}
+.sec-header{display:flex;align-items:baseline;gap:14px;margin-bottom:28px}
+.sec-header h2{font-family:var(--fh);font-size:32px;letter-spacing:3px;color:var(--white)}
+.sec-line{flex:1;height:1px;background:linear-gradient(90deg,var(--border2),transparent)}
+.sec-count{font-family:var(--fm);font-size:9px;letter-spacing:3px;color:var(--muted)}
+.topics-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.topic-card{background:var(--panel);border:1px solid var(--border);padding:26px 22px;transition:all .3s;cursor:none;position:relative;overflow:hidden}
+.topic-card::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(0,229,255,.05),transparent);opacity:0;transition:opacity .3s}
+.topic-card:hover{border-color:rgba(0,229,255,.4);transform:translateY(-4px);box-shadow:0 16px 48px rgba(0,229,255,.08)}
+.topic-card:hover::after{opacity:1}
+.topic-card .t-icon{font-size:28px;margin-bottom:12px;display:block}
+.topic-card h3{font-family:var(--fb);font-size:15px;font-weight:700;color:var(--white);margin-bottom:7px}
+.topic-card p{font-family:var(--fb);font-size:11px;color:var(--muted);line-height:1.7}
+.topic-mod{margin-top:14px;display:inline-flex;align-items:center;gap:6px;font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--cyan)}
+
+/* MEMBERS */
+.members-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:1px;background:var(--border);border-bottom:1px solid var(--border)}
+.member-card{background:var(--panel);padding:28px 16px;cursor:none;transition:all .3s;text-align:center;position:relative;overflow:hidden}
+.member-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);transform:scaleX(0);transition:transform .4s}
+.member-card:hover::before,.member-card.active::before{transform:scaleX(1)}
+.member-card:hover,.member-card.active{background:rgba(0,229,255,.05)}
+.member-card.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:8px solid var(--cyan)}
+.m-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 14px;background:var(--bg2);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:28px;transition:all .3s}
+.member-card:hover .m-avatar,.member-card.active .m-avatar{border-color:var(--cyan);box-shadow:0 0 20px rgba(0,229,255,.3)}
+.m-name{font-family:var(--fb);font-size:14px;font-weight:700;color:var(--white);margin-bottom:4px}
+.m-role{font-family:var(--fm);font-size:8px;letter-spacing:2px;color:var(--cyan);text-transform:uppercase;margin-bottom:12px}
+.m-skills{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-bottom:14px}
+.m-skill{font-family:var(--fm);font-size:7px;letter-spacing:1px;padding:3px 7px;border:1px solid var(--border);color:var(--muted);text-transform:uppercase;transition:all .2s}
+.member-card:hover .m-skill,.member-card.active .m-skill{border-color:rgba(0,229,255,.3);color:var(--text)}
+.m-view-btn{width:100%;padding:8px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--fm);font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:none;transition:all .25s}
+.member-card:hover .m-view-btn,.member-card.active .m-view-btn{border-color:var(--cyan);color:var(--cyan);background:rgba(0,229,255,.05)}
+.member-panel{display:none;background:var(--bg2);border-top:2px solid var(--cyan);border-bottom:1px solid var(--border);animation:fadeUp .3s ease}
+.member-panel.open{display:grid;grid-template-columns:1fr 320px}
+.mp-main{padding:38px 44px;border-right:1px solid var(--border)}
+.mp-header{display:flex;align-items:center;gap:16px;margin-bottom:26px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.mp-av{width:58px;height:58px;border-radius:50%;background:var(--panel);border:2px solid var(--cyan);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 0 20px rgba(0,229,255,.2)}
+.mp-meta h2{font-family:var(--fb);font-size:22px;font-weight:700;color:var(--white)}
+.mp-meta .role-tag{font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-top:3px}
+.mp-block{margin-bottom:22px}
+.mp-block-title{font-family:var(--fm);font-size:9px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.mp-block-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.mp-block p{font-family:var(--fb);font-size:12px;color:var(--muted);line-height:1.9}
+.mp-highlight{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-left:3px solid var(--cyan);padding:14px 18px;margin:14px 0}
+.mp-highlight p{font-size:11px;color:var(--text);line-height:1.8}
+.mp-points{list-style:none;display:flex;flex-direction:column;gap:7px}
+.mp-points li{font-family:var(--fb);font-size:12px;color:var(--muted);padding-left:16px;position:relative;line-height:1.6}
+.mp-points li::before{content:'▸';position:absolute;left:0;color:var(--cyan);font-size:9px;top:2px}
+.mp-side{padding:30px 24px}
+.skills-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px}
+.skill-tag{font-family:var(--fm);font-size:8px;letter-spacing:2px;padding:5px 10px;border:1px solid var(--border2);color:var(--muted);text-transform:uppercase;transition:all .2s;cursor:none}
+.skill-tag:hover{border-color:var(--cyan);color:var(--cyan)}
+.quick-stat{display:flex;justify-content:space-between;align-items:center;font-family:var(--fm);font-size:9px;padding:8px 12px;background:var(--panel);border:1px solid var(--border);margin-bottom:6px}
+.quick-stat .qs-label{color:var(--muted)}
+.quick-stat .qs-val{color:var(--cyan)}
+
+/* SLIDES PAGE */
+.slides-page{padding:36px 44px}
+.slides-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:28px}
+.slide-thumb{background:var(--panel);border:1px solid var(--border);padding:24px 20px;cursor:none;transition:all .3s;position:relative;overflow:hidden;min-height:160px;display:flex;flex-direction:column;justify-content:flex-end}
+.slide-thumb::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--cyan),#0077ff,transparent)}
+.slide-thumb:hover{border-color:rgba(0,229,255,.4);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,229,255,.1)}
+.slide-num{position:absolute;top:14px;right:16px;font-family:var(--fm);font-size:9px;letter-spacing:2px;color:var(--muted)}
+.slide-label{font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:7px}
+.slide-thumb h3{font-family:var(--fb);font-size:15px;font-weight:700;color:var(--white);line-height:1.2;margin-bottom:6px}
+.slide-thumb p{font-family:var(--fb);font-size:10px;color:var(--muted);line-height:1.5}
+.thumb-img-badge{position:absolute;top:14px;left:14px;font-family:var(--fm);font-size:7px;letter-spacing:1px;padding:3px 7px;background:rgba(0,229,255,.12);border:1px solid rgba(0,229,255,.3);color:var(--cyan)}
+.slides-cta{background:var(--panel);border:1px solid var(--border2);padding:28px 32px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.slides-cta h3{font-family:var(--fb);font-size:18px;font-weight:700;color:var(--white)}
+.slides-cta p{font-family:var(--fb);font-size:11px;color:var(--muted);margin-top:3px}
+
+/* ============================================================
+   DEVELOPER — SLIDES ONLY, BIGGER EDITOR
+   ============================================================ */
+.dev-layout{display:grid;grid-template-columns:220px 1fr 320px;height:calc(100vh - 48px);overflow:hidden}
+.dev-left{background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dev-left-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.dev-left-header h3{font-family:var(--fm);font-size:9px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;flex:1}
+.dev-left-header .slide-total{font-family:var(--fm);font-size:8px;color:var(--muted)}
+.dev-list-wrap{flex:1;overflow-y:auto;padding:10px}
+.dev-list-wrap::-webkit-scrollbar{width:3px}
+.dev-list-wrap::-webkit-scrollbar-track{background:transparent}
+.dev-list-wrap::-webkit-scrollbar-thumb{background:var(--border2)}
+.dev-list{display:flex;flex-direction:column;gap:5px}
+.dev-item{background:var(--panel);border:1px solid var(--border);padding:12px 13px;cursor:none;transition:all .2s;position:relative}
+.dev-item:hover,.dev-item.on{border-color:rgba(0,229,255,.4);background:rgba(0,229,255,.04)}
+.dev-item.on::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--cyan)}
+.dev-item-num{font-family:var(--fm);font-size:8px;color:var(--muted);margin-bottom:3px;letter-spacing:1px}
+.dev-item-title{font-family:var(--fb);font-size:12px;font-weight:600;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-add{margin:8px;padding:10px;border:1px dashed var(--border2);background:transparent;color:var(--muted);font-family:var(--fm);font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:none;transition:all .2s;text-align:center;flex-shrink:0}
+.dev-add:hover{border-color:var(--cyan);color:var(--cyan)}
+
+/* BIG CANVAS */
+.dev-canvas{background:var(--bg);display:flex;flex-direction:column;overflow:hidden}
+.dev-canvas-header{padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;flex-shrink:0;background:var(--bg2)}
+.dev-canvas-header .ch-label{font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--muted);text-transform:uppercase}
+.dev-canvas-header .ch-num{font-family:var(--fm);font-size:9px;color:var(--cyan)}
+.dev-canvas-body{flex:1;display:flex;align-items:center;justify-content:center;padding:28px;overflow:auto}
+.dev-card{width:100%;max-width:800px;background:var(--panel);border:1px solid var(--border);min-height:460px;position:relative;padding:52px 60px 46px;display:flex;flex-direction:column;justify-content:center;overflow:hidden;transition:all .3s}
+.dev-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--cyan),#0077ff,transparent)}
+.dev-card-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.02) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.02) 1px,transparent 1px);background-size:36px 36px;pointer-events:none}
+.dev-card-num{position:absolute;top:16px;right:20px;font-family:var(--fm);font-size:9px;letter-spacing:2px;color:var(--muted)}
+.dev-card-lbl{font-family:var(--fm);font-size:9px;letter-spacing:3px;text-transform:uppercase;margin-bottom:18px;opacity:.7}
+.dev-card-title{font-family:var(--fh);letter-spacing:2px;line-height:1.05;margin-bottom:20px;outline:none;border:none;background:transparent;width:100%;transition:font-size .2s,color .2s}
+.dev-card-title:focus{outline:1px dashed rgba(0,229,255,.3);outline-offset:4px}
+.dev-card-body{font-family:var(--fb);line-height:1.8;outline:none;border:none;background:transparent;width:100%;resize:none;min-height:100px;transition:font-size .2s,color .2s}
+.dev-card-body:focus{outline:1px dashed rgba(0,229,255,.2);outline-offset:4px}
+
+/* PROPERTIES PANEL */
+.dev-right{background:var(--bg2);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.dev-right-header{padding:14px 16px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.dev-right-header h3{font-family:var(--fm);font-size:9px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase}
+.dev-props{flex:1;overflow-y:auto;padding:14px 16px}
+.dev-props::-webkit-scrollbar{width:3px}
+.dev-props::-webkit-scrollbar-track{background:transparent}
+.dev-props::-webkit-scrollbar-thumb{background:var(--border2)}
+
+/* Property groups */
+.prop-section{margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.prop-section:last-child{border-bottom:none}
+.prop-section-title{font-family:var(--fm);font-size:8px;letter-spacing:3px;color:var(--cyan);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.prop-section-title::after{content:'';flex:1;height:1px;background:var(--border)}
+.prop-group{margin-bottom:10px}
+.prop-label{font-family:var(--fm);font-size:8px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:5px}
+.prop-input{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:10px;padding:8px 9px;outline:none;transition:border-color .2s}
+.prop-input:focus{border-color:var(--cyan)}
+.prop-textarea{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:10px;padding:8px 9px;resize:vertical;min-height:80px;outline:none;line-height:1.6;transition:border-color .2s}
+.prop-textarea:focus{border-color:var(--cyan)}
+.prop-select{width:100%;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:10px;padding:8px 9px;outline:none;cursor:none}
+
+/* TEXT SIZE CONTROLS */
+.size-row{display:flex;align-items:center;gap:6px}
+.size-row input[type="range"]{flex:1;height:3px;accent-color:var(--cyan);cursor:none}
+.size-val{font-family:var(--fm);font-size:10px;color:var(--cyan);min-width:32px;text-align:right}
+
+/* COLOR PICKER ROW */
+.color-row{display:flex;align-items:center;gap:8px}
+.color-row input[type="color"]{width:36px;height:30px;border:1px solid var(--border);background:var(--panel);padding:2px;cursor:none;border-radius:0}
+.color-row input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+.color-row input[type="color"]::-webkit-color-swatch{border:none}
+.color-presets{display:flex;gap:4px;flex-wrap:wrap}
+.color-preset{width:18px;height:18px;border:1px solid rgba(255,255,255,.15);cursor:none;transition:transform .15s;flex-shrink:0}
+.color-preset:hover{transform:scale(1.2);border-color:var(--white)}
+
+/* IMAGE MANAGER */
+.img-manager{background:var(--bg);border:1px solid var(--border);padding:14px}
+.img-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px}
+.img-card{background:var(--panel);border:1px solid var(--border);position:relative;aspect-ratio:16/9;overflow:hidden;cursor:none}
+.img-card img{width:100%;height:100%;object-fit:cover;opacity:.7;transition:opacity .2s}
+.img-card:hover img{opacity:1}
+.img-card-actions{position:absolute;inset:0;display:flex;align-items:flex-end;padding:6px;gap:4px;opacity:0;transition:opacity .2s;background:linear-gradient(transparent,rgba(0,0,0,.7))}
+.img-card:hover .img-card-actions{opacity:1}
+.img-card-del{background:var(--red);border:none;color:white;font-family:var(--fm);font-size:8px;padding:4px 8px;cursor:none;flex:1}
+.img-card-empty{background:var(--panel);border:1px dashed var(--border2);aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-family:var(--fm);font-size:8px;color:var(--muted);letter-spacing:1px;text-align:center}
+.img-add-area{background:rgba(0,229,255,.03);border:1px dashed rgba(0,229,255,.3);padding:12px;text-align:center;margin-bottom:8px}
+.img-add-area p{font-family:var(--fm);font-size:8px;color:var(--muted);margin-bottom:8px;letter-spacing:1px}
+.img-url-row{display:flex;gap:6px}
+.img-url-inp{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:9px;padding:7px 9px;outline:none}
+.img-url-inp:focus{border-color:var(--cyan)}
+.img-url-add{padding:7px 12px;background:var(--cyan);border:none;color:var(--bg);font-family:var(--fm);font-size:8px;font-weight:600;letter-spacing:1px;cursor:none;white-space:nowrap}
+.img-interval-row{display:flex;align-items:center;gap:8px}
+.img-interval-row label{font-family:var(--fm);font-size:8px;color:var(--muted);letter-spacing:1px;white-space:nowrap}
+.img-interval-row input{flex:1;background:var(--panel);border:1px solid var(--border);color:var(--text);font-family:var(--fm);font-size:10px;padding:6px 8px;outline:none}
+.img-interval-row input:focus{border-color:var(--cyan)}
+
+/* SAVE / ACTION BUTTONS */
+.save-btn{width:100%;padding:12px;background:var(--cyan);color:var(--bg);font-family:var(--fm);font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;border:none;cursor:none;transition:all .2s}
+.save-btn:hover{background:transparent;color:var(--cyan);outline:1px solid var(--cyan)}
+.del-btn{width:100%;padding:9px;background:transparent;color:var(--orange);font-family:var(--fm);font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--orange);cursor:none;transition:all .2s;margin-top:5px}
+.del-btn:hover{background:var(--orange);color:var(--bg)}
+.sync-msg{font-family:var(--fm);font-size:8px;text-align:center;margin-top:8px;color:var(--green);min-height:13px;letter-spacing:1px}
+.exp-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.exp-btn{padding:8px 4px;background:transparent;border:1px solid var(--border);color:var(--muted);font-family:var(--fm);font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:none;transition:all .2s;text-align:center}
+.exp-btn:hover{border-color:var(--cyan);color:var(--cyan)}
+.info-note{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.12);padding:10px 12px;margin-bottom:14px}
+.info-note p{font-family:var(--fm);font-size:8px;color:var(--muted);line-height:1.7}
+.info-note span{color:var(--cyan)}
+
+/* PRESENT MODE */
+#present-mode{position:fixed;inset:0;background:var(--bg);z-index:10000;display:none;flex-direction:column}
+#present-mode.on{display:flex}
+.pm-bar{height:44px;background:rgba(3,7,13,.96);border-bottom:1px solid var(--border2);display:flex;align-items:center;padding:0 24px;gap:12px;flex-shrink:0}
+.pm-title-bar{font-family:var(--fm);font-size:9px;letter-spacing:3px;color:var(--muted);flex:1}
+.pm-progress{font-family:var(--fm);font-size:10px;color:var(--cyan);letter-spacing:2px}
+.pm-ctrl{padding:5px 14px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--fm);font-size:8px;letter-spacing:2px;text-transform:uppercase;cursor:none;transition:all .2s}
+.pm-ctrl:hover{border-color:var(--cyan);color:var(--cyan)}
+.pm-ctrl.exit{border-color:rgba(255,59,92,.4);color:var(--red)}
+.pm-ctrl.exit:hover{background:var(--red);color:var(--bg)}
+.pm-stage{flex:1;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.pm-grid-bg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,229,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,.025) 1px,transparent 1px);background-size:52px 52px;pointer-events:none}
+
+/* IMAGE SLIDESHOW */
+.pm-img-backdrop{position:absolute;inset:0;z-index:0;overflow:hidden}
+.pm-img-slide{position:absolute;inset:0;background-size:cover;background-position:center;opacity:0;transition:opacity 1s ease,transform 7s ease;transform:scale(1.06)}
+.pm-img-slide.active{opacity:.25;transform:scale(1)}
+.pm-img-slide.exit{opacity:0;transform:scale(1.09)}
+.pm-img-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(3,7,13,.88) 40%,rgba(3,7,13,.65) 100%)}
+
+.pm-content{position:relative;z-index:2;width:100%;height:100%;display:flex;align-items:center;justify-content:center;padding:56px}
+.pm-slide-inner{max-width:940px;width:100%;animation:fadeUp .4s ease}
+.pm-lbl{font-family:var(--fm);font-size:9px;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;margin-bottom:18px}
+.pm-slide-inner h1{font-family:var(--fh);letter-spacing:3px;line-height:.95;margin-bottom:24px}
+.pm-slide-inner h1 em{font-style:normal;text-shadow:0 0 40px rgba(0,229,255,.4)}
+.pm-slide-inner p{font-family:var(--fb);line-height:1.85;max-width:720px}
+.pm-two-col{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.pm-vis-grid{background:var(--panel);border:1px solid var(--border2);padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pm-vis-item{background:var(--bg);border:1px solid var(--border);padding:18px;text-align:center}
+.pm-vis-item .vi-icon{font-size:26px;display:block;margin-bottom:6px}
+.pm-vis-item span{font-family:var(--fm);font-size:8px;letter-spacing:1px;color:var(--muted);text-transform:uppercase}
+.pm-slide-inner ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.pm-slide-inner ul li{font-family:var(--fb);font-size:14px;color:var(--text);padding-left:20px;position:relative;line-height:1.6}
+.pm-slide-inner ul li::before{content:'▸';position:absolute;left:0;color:var(--cyan)}
+
+/* Image strip */
+.pm-img-strip{position:absolute;bottom:64px;right:28px;z-index:3;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.pm-img-counter{font-family:var(--fm);font-size:8px;letter-spacing:2px;color:rgba(0,229,255,.6)}
+.pm-img-dots{display:flex;gap:5px}
+.pm-img-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.2);cursor:none;transition:all .3s}
+.pm-img-dot.on{background:var(--cyan);box-shadow:0 0 8px var(--cyan)}
+
+/* NAV DOTS */
+.pm-dots{display:flex;gap:7px;justify-content:center;padding:14px 0;border-top:1px solid var(--border);flex-shrink:0}
+.pm-dot{width:6px;height:6px;border-radius:50%;background:var(--border2);cursor:none;transition:all .25s}
+.pm-dot.on{background:var(--cyan);box-shadow:0 0 10px var(--cyan);width:20px;border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- FIREBASE STATUS BANNER -->
+<div class="fb-banner" id="fb-banner">
+  ⚠️ Firebase not connected — changes only visible on <strong>this computer</strong>.
+  <a onclick="showFbSetup()">Click here to set up real-time sync →</a>
+  <button onclick="document.getElementById('fb-banner').classList.add('fb-hidden')">DISMISS</button>
+</div>
+
+<!-- FIREBASE SETUP MODAL -->
+<div id="fb-modal" style="display:none;position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);align-items:center;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border2);padding:32px;max-width:560px;width:90%;max-height:90vh;overflow-y:auto">
+    <div style="font-family:var(--fh);font-size:28px;color:var(--cyan);letter-spacing:3px;margin-bottom:6px">🔥 FIREBASE SETUP</div>
+    <p style="font-family:var(--fm);font-size:9px;color:var(--muted);letter-spacing:1px;margin-bottom:20px;line-height:1.8">
+      Follow these steps once. After setup, edits on <strong style="color:var(--white)">any computer</strong> instantly appear everywhere.
+    </p>
+    <ol style="font-family:var(--fb);font-size:12px;color:var(--text);line-height:2;padding-left:18px;margin-bottom:20px">
+      <li>Go to <a href="https://console.firebase.google.com" target="_blank" style="color:var(--cyan)">console.firebase.google.com</a></li>
+      <li>Click <strong>Add project</strong> → name it "computex" → Create</li>
+      <li>In the project, click <strong>Realtime Database</strong> → Create database → Start in <strong>test mode</strong></li>
+      <li>Go to <strong>Project Settings</strong> (gear icon) → scroll to <em>Your apps</em> → click <strong>&lt;/&gt;</strong> (Web)</li>
+      <li>Register app → copy the <code style="color:var(--green)">firebaseConfig</code> object</li>
+      <li>Paste the JSON below (just the values inside the curly braces):</li>
+    </ol>
+    <textarea id="fb-config-input" style="width:100%;min-height:140px;background:var(--panel);border:1px solid var(--border2);color:var(--green);font-family:var(--fm);font-size:10px;padding:12px;outline:none;resize:vertical;line-height:1.6" placeholder='{
+  "apiKey": "AIza...",
+  "authDomain": "your-app.firebaseapp.com",
+  "databaseURL": "https://your-app-default-rtdb.firebaseio.com",
+  "projectId": "your-app",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "123456",
+  "appId": "1:123:web:abc"
+}'></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px">
+      <button onclick="applyFbConfig()" style="flex:1;padding:12px;background:var(--cyan);border:none;color:var(--bg);font-family:var(--fh);font-size:20px;letter-spacing:3px;cursor:pointer">CONNECT →</button>
+      <button onclick="document.getElementById('fb-modal').style.display='none'" style="padding:12px 20px;background:transparent;border:1px solid var(--border2);color:var(--muted);font-family:var(--fm);font-size:9px;cursor:pointer;letter-spacing:1px">CANCEL</button>
+    </div>
+    <div id="fb-modal-msg" style="font-family:var(--fm);font-size:9px;color:var(--green);margin-top:10px;min-height:14px;letter-spacing:1px"></div>
+  </div>
+</div>
+
+<div class="cur" id="cur"></div>
+<div class="cur-ring" id="curRing"></div>
+<div class="ptc" id="ptc"></div>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-tag">// CS Presentation</div>
+    <div class="sb-title">COMPUTE<span>X</span></div>
+  </div>
+  <ul class="nav-links">
+    <li><a href="#" class="active" onclick="showPage('home',this);return false"><span class="ic">⌂</span>Home</a></li>
+    <li><a href="#" onclick="showPage('members',this);return false"><span class="ic">◉</span>Members</a></li>
+    <li><a href="#" onclick="showPage('slides',this);return false"><span class="ic">▷</span>Slides</a></li>
+    <li><a href="#" onclick="showPage('developer',this);return false"><span class="ic">⌘</span>Developer<span class="badge">EDIT</span></a></li>
+  </ul>
+  <button class="sb-present" onclick="enterPM()">▷ PRESENT</button>
+  <div class="sb-foot"><span class="status-dot"></span>SYSTEM ONLINE</div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="tb-bread">COMPUTEX / <span id="breadcrumb">HOME</span></div>
+    <div class="tb-right">
+      <div class="tb-time" id="clock">--:--:--</div>
+      <button class="tb-present-btn" onclick="enterPM()">▶ PRESENT »</button>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="page active" id="page-home">
+    <div class="hero">
+      <div class="hero-grid-bg"></div>
+      <div class="hero-orb hero-orb1"></div>
+      <div class="hero-orb hero-orb2"></div>
+      <div class="hero-kicker">Computer Science Presentation 2025</div>
+      <h1>
+        <span>THE FUTURE</span>
+        <span class="line2">OF COMPUTING</span>
+        <span class="line3">STARTS HERE</span>
+      </h1>
+      <p class="hero-sub" id="hero-sub-el"></p>
+      <div class="hero-actions">
+        <button class="btn-present" onclick="enterPM()">▶ PRESENT NOW »</button>
+        <a class="btn-sec" href="#" onclick="showPage('members',document.querySelector('.nav-links li:nth-child(2) a'));return false">Meet the Team →</a>
+      </div>
+    </div>
+    <div class="stats-bar">
+      <div class="stat-item"><div class="stat-n">6<em>+</em></div><div class="stat-l">Topics Covered</div></div>
+      <div class="stat-item"><div class="stat-n" id="s-members">5</div><div class="stat-l">Team Members</div></div>
+      <div class="stat-item"><div class="stat-n" id="s-slides">6</div><div class="stat-l">Slides Ready</div></div>
+      <div class="stat-item"><div class="stat-n">∞</div><div class="stat-l">Possibilities</div></div>
+    </div>
+    <div class="section">
+      <div class="sec-header"><h2>Core Topics</h2><div class="sec-line"></div><div class="sec-count" id="topic-count">06 MODULES</div></div>
+      <div class="topics-grid" id="topics-grid"></div>
+    </div>
+  </div>
+
+  <!-- MEMBERS -->
+  <div class="page" id="page-members">
+    <div class="members-grid" id="members-grid"></div>
+    <div class="member-panel" id="member-panel">
+      <div class="mp-main" id="mp-main"></div>
+      <div class="mp-side" id="mp-side"></div>
+    </div>
+  </div>
+
+  <!-- SLIDES -->
+  <div class="page" id="page-slides">
+    <div class="slides-page">
+      <div class="sec-header" style="margin-bottom:24px"><h2>Slide Deck</h2><div class="sec-line"></div><div class="sec-count" id="slides-count">6 SLIDES</div></div>
+      <div class="slides-grid" id="slides-grid"></div>
+      <div class="slides-cta">
+        <div><h3>Ready to Present?</h3><p>Fullscreen mode. Arrow keys / Space to navigate. Images auto-rotate.</p></div>
+        <button class="btn-present" style="font-size:20px;padding:12px 28px;" onclick="enterPM()">▶ PRESENT</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEVELOPER — SLIDES ONLY -->
+  <div class="page" id="page-developer">
+    <div class="dev-layout">
+      <!-- LEFT: Slide list -->
+      <div class="dev-left">
+        <div class="dev-left-header">
+          <h3>Slides</h3>
+          <span class="slide-total" id="slide-total-count">6</span>
+        </div>
+        <div class="dev-list-wrap" id="dev-list-wrap"></div>
+        <button class="dev-add" onclick="devAddSlide()">+ ADD SLIDE</button>
+      </div>
+
+      <!-- CENTER: Big live preview card -->
+      <div class="dev-canvas">
+        <div class="dev-canvas-header">
+          <span class="ch-label">Live Preview</span>
+          <span class="ch-num" id="d-num">01 / 06</span>
+          <div style="margin-left:auto;display:flex;gap:8px">
+            <button style="padding:5px 14px;border:1px solid var(--border2);background:transparent;color:var(--muted);font-family:var(--fm);font-size:8px;letter-spacing:2px;cursor:none;transition:all .2s" onmouseover="this.style.borderColor='var(--cyan)';this.style.color='var(--cyan)'" onmouseout="this.style.borderColor='var(--border2)';this.style.color='var(--muted)'" onclick="enterPM(devSlIdx)">▶ PREVIEW SLIDE</button>
+          </div>
+        </div>
+        <div class="dev-canvas-body">
+          <div class="dev-card" id="dev-card-preview">
+            <div class="dev-card-grid"></div>
+            <div class="dev-card-num" id="d-num2">01 / 06</div>
+            <div class="dev-card-lbl" id="d-lbl">LABEL</div>
+            <div class="dev-card-title" id="d-title" contenteditable="true" spellcheck="false" oninput="onTitleInput()">Select a slide</div>
+            <div class="dev-card-body" id="d-body" contenteditable="true" spellcheck="false" oninput="onBodyInput()">Click a slide on the left to begin editing.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Properties panel -->
+      <div class="dev-right">
+        <div class="dev-right-header">
+          <h3>Properties</h3>
+        </div>
+        <div class="dev-props" id="dev-props">
+          <div class="info-note"><p>Select a slide from the left panel to edit its properties, text, colors, images and more.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PRESENT MODE -->
+<div id="present-mode">
+  <div class="pm-bar">
+    <div class="pm-title-bar" id="pm-title-bar">COMPUTEX</div>
+    <div class="pm-progress" id="pm-prog">01 / 06</div>
+    <button class="pm-ctrl" onclick="pmNav(-1)">← PREV</button>
+    <button class="pm-ctrl" onclick="pmNav(1)">NEXT →</button>
+    <button class="pm-ctrl exit" onclick="exitPM()">✕ EXIT</button>
+  </div>
+  <div class="pm-stage">
+    <div class="pm-grid-bg"></div>
+    <div class="pm-img-backdrop" id="pm-img-backdrop"></div>
+    <div class="pm-content">
+      <div class="pm-slide-inner" id="pm-slide-inner"></div>
+    </div>
+    <div class="pm-img-strip" id="pm-img-strip"></div>
+  </div>
+  <div class="pm-dots" id="pm-dots"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA ENGINE — Firebase real-time sync
+// ============================================================
+let APP = {};
+window.APP = APP;
+window._APP_READY = false;
+
+function loadAppData() {
+  return JSON.parse(document.getElementById('cx-data').textContent);
+}
+APP = window.APP = loadAppData();
+
+// Save to Firebase (live sync to all computers) AND keep local copy
+async function saveSlides() {
+  if (window._fbSaveSlides) {
+    const ok = await window._fbSaveSlides();
+    if (ok) return;
+  }
+  // fallback: no firebase, just keep in memory
+}
+async function saveMembers() {
+  if (window._fbSaveMembers) {
+    const ok = await window._fbSaveMembers();
+    if (ok) return;
+  }
+}
+
+function showFbSetup() {
+  document.getElementById('fb-modal').style.display = 'flex';
+}
+
+function applyFbConfig() {
+  const raw = document.getElementById('fb-config-input').value.trim();
+  const msg = document.getElementById('fb-modal-msg');
+  try {
+    const cfg = JSON.parse(raw.startsWith('{') ? raw : '{' + raw + '}');
+    if (!cfg.databaseURL) { msg.textContent = '❌ Missing databaseURL — make sure you enabled Realtime Database'; msg.style.color='var(--red)'; return; }
+    // Store config and reload
+    localStorage.setItem('cx_fb_config', JSON.stringify(cfg));
+    msg.textContent = '✅ Config saved! Reloading...'; msg.style.color='var(--green)';
+    setTimeout(() => location.reload(), 1200);
+  } catch(e) {
+    msg.textContent = '❌ Invalid JSON — check for typos'; msg.style.color='var(--red)';
+  }
+}
+
+// Load saved Firebase config from localStorage and inject before module runs
+(function() {
+  const saved = localStorage.getItem('cx_fb_config');
+  if (saved) {
+    try { window._CX_FIREBASE_CONFIG = JSON.parse(saved); } catch(e) {}
+  }
+})();
+
+// ============================================================
+// CURSOR
+// ============================================================
+const curEl = document.getElementById('cur'), ringEl = document.getElementById('curRing');
+let mx=0, my=0, rx=0, ry=0;
+document.addEventListener('mousemove', e=>{ mx=e.clientX; my=e.clientY; });
+document.addEventListener('mousedown', ()=>curEl.classList.add('click'));
+document.addEventListener('mouseup',   ()=>curEl.classList.remove('click'));
+(function ani(){
+  curEl.style.transform  = `translate(${mx-4}px,${my-4}px)`;
+  rx += (mx-rx)*.11; ry += (my-ry)*.11;
+  ringEl.style.transform = `translate(${rx-16}px,${ry-16}px)`;
+  requestAnimationFrame(ani);
+})();
+
+// CLOCK
+setInterval(()=>{
+  const n=new Date();
+  document.getElementById('clock').textContent=
+    [n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':');
+},1000);
+
+// PARTICLES
+const ptc = document.getElementById('ptc');
+for(let i=0;i<28;i++){
+  const p=document.createElement('div'); p.className='pt';
+  const sz = Math.random()*2.5+1;
+  p.style.cssText=`left:${Math.random()*100}%;width:${sz}px;height:${sz}px;--d:${6+Math.random()*12}s;--dl:${Math.random()*10}s;--dx:${(Math.random()-.5)*100}px;`;
+  p.style.background = Math.random()>.65 ? '#00ff88' : '#00e5ff';
+  p.style.boxShadow  = `0 0 6px ${p.style.background}`;
+  ptc.appendChild(p);
+}
+
+// ============================================================
+// INIT
+// ============================================================
+function initApp() {
+  // Expose to module scope for Firebase callbacks
+  window.APP = APP;
+  window.renderSlideThumbs = renderSlideThumbs;
+  window.renderMembers = renderMembers;
+  window.devRenderList = devRenderList;
+  window.devPickSlide = devPickSlide;
+  window.syncMsg = syncMsg;
+  window.initApp = initApp;
+
+  // Update Firebase banner
+  setTimeout(() => {
+    const banner = document.getElementById('fb-banner');
+    if (!banner) return;
+    if (window._FB_READY) {
+      banner.classList.add('fb-ok');
+      banner.innerHTML = '🔥 Firebase connected — real-time sync active on all computers! <button onclick="document.getElementById(\'fb-banner\').classList.add(\'fb-hidden\')" style="margin-left:auto;background:rgba(255,255,255,.25);border:1px solid rgba(255,255,255,.5);color:#fff;font-family:var(--fm);font-size:9px;padding:3px 10px;cursor:pointer;letter-spacing:1px">HIDE</button>';
+    }
+  }, 1500);
+
+  const hsub = document.getElementById('hero-sub-el');
+  if(hsub) hsub.textContent = APP.meta.heroSub || '';
+  const tg = document.getElementById('topics-grid');
+  if(tg && APP.topics){
+    tg.innerHTML = APP.topics.map(t=>`
+      <div class="topic-card">
+        <span class="t-icon">${t.icon}</span>
+        <h3>${t.title}</h3>
+        <p>${t.desc}</p>
+        <div class="topic-mod">→ Module ${t.mod}</div>
+      </div>`).join('');
+    const tc = document.getElementById('topic-count');
+    if(tc) tc.textContent = String(APP.topics.length).padStart(2,'0')+' MODULES';
+  }
+  const sm = document.getElementById('s-members');
+  const ss = document.getElementById('s-slides');
+  if(sm) sm.textContent = APP.members ? APP.members.length : 0;
+  if(ss) ss.textContent = APP.slides  ? APP.slides.length  : 0;
+  renderSlideThumbs();
+  window._APP_READY = true;
+}
+initApp();
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(id, lk) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a=>a.classList.remove('active'));
+  if(lk) lk.classList.add('active');
+  document.getElementById('breadcrumb').textContent = id.toUpperCase();
+  if(id==='members')   renderMembers();
+  if(id==='slides')    renderSlideThumbs();
+  if(id==='developer') initDev();
+}
+
+// ============================================================
+// MEMBERS
+// ============================================================
+let activeMember = null;
+function renderMembers(){
+  document.getElementById('members-grid').innerHTML = APP.members.map(m=>`
+    <div class="member-card${activeMember===m.id?' active':''}" onclick="toggleMember(${m.id})">
+      <div class="m-avatar">${m.emoji}</div>
+      <div class="m-name">${m.name}</div>
+      <div class="m-role">${m.role}</div>
+      <div class="m-skills">${m.skills.map(s=>`<span class="m-skill">${s}</span>`).join('')}</div>
+      <button class="m-view-btn">View Content ↓</button>
+    </div>`).join('');
+  if(activeMember) renderMemberPanel(activeMember);
+}
+function toggleMember(id){
+  if(activeMember===id){ activeMember=null; document.getElementById('member-panel').classList.remove('open'); renderMembers(); return; }
+  activeMember=id; renderMembers();
+  const p=document.getElementById('member-panel'); p.classList.add('open');
+  renderMemberPanel(id);
+  setTimeout(()=>p.scrollIntoView({behavior:'smooth',block:'start'}),60);
+}
+function renderMemberPanel(id){
+  const m=APP.members.find(x=>x.id===id); if(!m) return;
+  document.getElementById('mp-main').innerHTML=`
+    <div class="mp-header">
+      <div class="mp-av">${m.emoji}</div>
+      <div class="mp-meta"><h2>${m.name}</h2><div class="role-tag">${m.role} — ${m.topic}</div></div>
+    </div>
+    <div class="mp-block"><div class="mp-block-title">About</div><p>${m.bio}</p></div>
+    <div class="mp-block"><div class="mp-block-title">Topic Overview — ${m.topic}</div><p>${m.content}</p></div>
+    <div class="mp-highlight"><p>📌 <strong>Key Focus:</strong> ${m.topic} — presented by ${m.name}.</p></div>
+    <div class="mp-block"><div class="mp-block-title">Key Points</div><ul class="mp-points">${m.points.map(p=>`<li>${p}</li>`).join('')}</ul></div>`;
+  document.getElementById('mp-side').innerHTML=`
+    <div class="mp-block-title" style="margin-bottom:14px">Technologies</div>
+    <div class="skills-list">${m.skills.map(s=>`<span class="skill-tag">${s}</span>`).join('')}</div>
+    <div class="mp-block-title" style="margin:18px 0 12px">Key Points Summary</div>
+    ${m.points.map(p=>`<div class="quick-stat"><span class="qs-label">${p.split(':')[0]}</span><span class="qs-val">▸</span></div>`).join('')}`;
+}
+
+// ============================================================
+// SLIDE THUMBNAILS
+// ============================================================
+function renderSlideThumbs(){
+  const sl=APP.slides;
+  const g=document.getElementById('slides-grid'); if(!g) return;
+  g.innerHTML=sl.map((s,i)=>`
+    <div class="slide-thumb" onclick="enterPM(${i})">
+      ${s.images&&s.images.length?`<div class="thumb-img-badge">🖼 ${s.images.length} img${s.images.length>1?'s':''}</div>`:''}
+      <div class="slide-num">${String(i+1).padStart(2,'0')} / ${String(sl.length).padStart(2,'0')}</div>
+      <div class="slide-label">${s.label}</div>
+      <h3>${(s.title||'').replace(/<[^>]*>/g,'').substring(0,40)}</h3>
+      <p>${(s.body||'').substring(0,80)}…</p>
+    </div>`).join('');
+  const sc=document.getElementById('slides-count'); if(sc) sc.textContent=`${sl.length} SLIDES`;
+  const ss=document.getElementById('s-slides');     if(ss) ss.textContent=sl.length;
+}
+
+// ============================================================
+// IMAGE SLIDESHOW ENGINE
+// ============================================================
+let imgTimer=null, imgIdx=0;
+function stopImgTimer(){ if(imgTimer){ clearInterval(imgTimer); imgTimer=null; } }
+
+function startImgShow(images, intervalMs, opts){
+  stopImgTimer();
+  const bd=document.getElementById('pm-img-backdrop');
+  const strip=document.getElementById('pm-img-strip');
+  bd.innerHTML=''; strip.innerHTML='';
+  imgIdx=0;
+  if(!images||!images.length) return;
+  const fit=opts&&opts.fit||'cover';
+  const pos=opts&&opts.position||'center';
+  const opacity=opts&&opts.opacity!=null?opts.opacity:0.25;
+  images.forEach((url,i)=>{
+    const div=document.createElement('div');
+    div.className='pm-img-slide';
+    div.style.backgroundImage=`url('${url}')`;
+    div.style.backgroundSize=fit;
+    div.style.backgroundPosition=pos;
+    if(i===0){ div.classList.add('active'); div.style.opacity=opacity; }
+    bd.appendChild(div);
+  });
+  const ov=document.createElement('div');
+  ov.className='pm-img-overlay';
+  bd.appendChild(ov);
+  if(images.length>1){
+    strip.innerHTML=`
+      <div class="pm-img-counter" id="img-ctr">IMG 1 / ${images.length}</div>
+      <div class="pm-img-dots" id="img-dots">
+        ${images.map((_,i)=>`<div class="pm-img-dot${i===0?' on':''}" onclick="jumpImg(${i})"></div>`).join('')}
+      </div>`;
+    imgTimer=setInterval(()=>{
+      const layers=bd.querySelectorAll('.pm-img-slide');
+      layers[imgIdx].style.opacity=0; layers[imgIdx].classList.remove('active'); layers[imgIdx].classList.add('exit');
+      setTimeout(()=>layers[imgIdx]&&layers[imgIdx].classList.remove('exit'),1200);
+      imgIdx=(imgIdx+1)%images.length;
+      layers[imgIdx].classList.add('active'); layers[imgIdx].style.opacity=opacity;
+      updateImgUI(images.length);
+    }, intervalMs||4000);
+  }
+}
+function jumpImg(i){
+  const bd=document.getElementById('pm-img-backdrop');
+  const layers=bd.querySelectorAll('.pm-img-slide');
+  if(!layers.length) return;
+  layers[imgIdx].classList.remove('active'); imgIdx=i; layers[imgIdx].classList.add('active');
+  updateImgUI(layers.length);
+}
+function updateImgUI(total){
+  const ctr=document.getElementById('img-ctr'),dots=document.getElementById('img-dots');
+  if(ctr) ctr.textContent=`IMG ${imgIdx+1} / ${total}`;
+  if(dots) [...dots.children].forEach((d,i)=>d.classList.toggle('on',i===imgIdx));
+}
+
+// ============================================================
+// PRESENT MODE
+// ============================================================
+let pmIdx=0;
+function buildSlideHTML(s){
+  const titleStyle=`font-size:${s.titleSize||58}px;color:${s.titleColor||'#eaf6ff'}`;
+  const bodyStyle=`font-size:${s.bodySize||16}px;color:${s.bodyColor||'#a8c8d8'}`;
+
+  // Build content images HTML
+  let cimgHtml='';
+  if(s.contentImages&&s.contentImages.length){
+    const byAlign={left:[],center:[],right:[]};
+    s.contentImages.forEach(ci=>{ const a=ci.align||'left'; (byAlign[a]||byAlign.left).push(ci); });
+    const renderGroup=(imgs,align)=>imgs.length?`<div class="slide-content-imgs" style="justify-content:${align==='center'?'center':align==='right'?'flex-end':'flex-start'}">${imgs.map(ci=>`
+      <div class="slide-content-img-wrap align-${ci.align||'left'}">
+        <img src="${eh(ci.src)}" style="width:${ci.width||280}px;height:${ci.height||180}px;border-radius:${ci.radius||0}px" alt="${eh(ci.caption||'')}">
+        ${ci.caption?`<div class="slide-content-img-cap">${eh(ci.caption)}</div>`:''}
+      </div>`).join('')}</div>`:'';
+    cimgHtml=renderGroup(byAlign.left,'left')+renderGroup(byAlign.center,'center')+renderGroup(byAlign.right,'right');
+  }
+
+  if(s.layout==='two-col'){
+    return `<div class="pm-lbl">${s.label}</div>
+    <div class="pm-two-col">
+      <div>
+        <h1 style="${titleStyle}">${s.title}</h1>
+        <p style="${bodyStyle}">${s.body}</p>
+        ${cimgHtml}
+      </div>
+      <div class="pm-vis-grid">
+        <div class="pm-vis-item"><span class="vi-icon">${s.icon||'💡'}</span><span>Core</span></div>
+        <div class="pm-vis-item"><span class="vi-icon">📊</span><span>Data</span></div>
+        <div class="pm-vis-item"><span class="vi-icon">🔄</span><span>Process</span></div>
+        <div class="pm-vis-item"><span class="vi-icon">⚡</span><span>Output</span></div>
+      </div>
+    </div>`;
+  }
+  return `<div class="pm-lbl">${s.label}</div><h1 style="${titleStyle}">${s.title}</h1><p style="${bodyStyle}">${s.body}</p>${cimgHtml}`;
+}
+function enterPM(idx=0){
+  pmIdx=idx;
+  document.getElementById('present-mode').classList.add('on');
+  document.body.style.overflow='hidden';
+  updatePM();
+}
+function exitPM(){
+  stopImgTimer();
+  document.getElementById('present-mode').classList.remove('on');
+  document.body.style.overflow='';
+}
+function updatePM(){
+  const sl=APP.slides, s=sl[pmIdx], t=sl.length;
+  document.getElementById('pm-slide-inner').innerHTML=buildSlideHTML(s);
+  document.getElementById('pm-prog').textContent=`${String(pmIdx+1).padStart(2,'0')} / ${String(t).padStart(2,'0')}`;
+  document.getElementById('pm-title-bar').textContent=(s.label||'COMPUTEX');
+  document.getElementById('pm-dots').innerHTML=sl.map((_,i)=>
+    `<div class="pm-dot${i===pmIdx?' on':''}" onclick="pmGoTo(${i})"></div>`).join('');
+  startImgShow(s.images||[],(s.imageInterval||4)*1000,{fit:s.imageFit,position:s.imagePosition,opacity:s.imageOpacity});
+}
+function pmNav(d){ pmIdx=Math.min(Math.max(pmIdx+d,0),APP.slides.length-1); updatePM(); }
+function pmGoTo(i){ pmIdx=i; updatePM(); }
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('present-mode').classList.contains('on')){
+    if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){ e.preventDefault(); pmNav(1); }
+    if(e.key==='ArrowLeft'||e.key==='ArrowUp'){ e.preventDefault(); pmNav(-1); }
+    if(e.key==='Escape') exitPM();
+  }
+  if((e.ctrlKey||e.metaKey)&&e.key==='s'){
+    e.preventDefault();
+    if(document.getElementById('page-developer').classList.contains('active')) devSaveSlide();
+  }
+});
+
+// ============================================================
+// DEVELOPER — SLIDES ONLY
+// ============================================================
+let devSlIdx=0;
+
+const COLOR_PRESETS=[
+  '#eaf6ff','#00e5ff','#00ff88','#ff6b35','#ff3b5c',
+  '#ffffff','#ffeb3b','#ce93d8','#80cbc4','#a8c8d8'
+];
+
+function initDev(){ devRenderList(); devPickSlide(devSlIdx); }
+
+function devRenderList(){
+  const tot=document.getElementById('slide-total-count');
+  if(tot) tot.textContent=APP.slides.length;
+  const w=document.getElementById('dev-list-wrap');
+  w.innerHTML=`<div class="dev-list">${APP.slides.map((s,i)=>`
+    <div class="dev-item${i===devSlIdx?' on':''}" onclick="devPickSlide(${i})">
+      <div class="dev-item-num">SLIDE ${String(i+1).padStart(2,'0')}</div>
+      <div class="dev-item-title">${(s.title||'').replace(/<[^>]*>/g,'').substring(0,28)||'Untitled'}</div>
+    </div>`).join('')}</div>`;
+}
+
+function devPickSlide(i){
+  devSlIdx=i; devRenderList();
+  const s=APP.slides[i]; if(!s) return;
+  const tot=String(APP.slides.length).padStart(2,'0');
+  const numStr=`${String(i+1).padStart(2,'0')} / ${tot}`;
+  document.getElementById('d-num').textContent=numStr;
+  document.getElementById('d-num2').textContent=numStr;
+  document.getElementById('d-lbl').textContent=s.label||'';
+  document.getElementById('d-lbl').style.color=s.titleColor||'#00e5ff';
+
+  const titleEl=document.getElementById('d-title');
+  titleEl.innerHTML=s.title||'';
+  titleEl.style.fontSize=(s.titleSize||58)+'px';
+  titleEl.style.color=s.titleColor||'#eaf6ff';
+
+  const bodyEl=document.getElementById('d-body');
+  bodyEl.textContent=stripHtml(s.body||'');
+  bodyEl.style.fontSize=(s.bodySize||16)+'px';
+  bodyEl.style.color=s.bodyColor||'#a8c8d8';
+
+  renderProps(s, i);
+}
+
+function stripHtml(h){ const d=document.createElement('div');d.innerHTML=h;return d.textContent||d.innerText||''; }
+
+function onTitleInput(){
+  const s=APP.slides[devSlIdx]; if(!s) return;
+  s.title=document.getElementById('d-title').textContent;
+}
+function onBodyInput(){
+  const s=APP.slides[devSlIdx]; if(!s) return;
+  s.body=document.getElementById('d-body').textContent;
+}
+
+function renderProps(s, idx){
+  document.getElementById('dev-props').innerHTML=`
+    <div class="info-note"><p>Edit below, then press <span>💾 SAVE & SYNC</span> — changes go to Firebase and appear on <span>every computer</span> in real-time. Set up Firebase via the top banner if not done yet.</p></div>
+
+    <!-- CONTENT -->
+    <div class="prop-section">
+      <div class="prop-section-title">Content</div>
+      <div class="prop-group"><div class="prop-label">Slide Label</div>
+        <input class="prop-input" id="pi-lbl" value="${eh(s.label)}" oninput="liveLabel()">
+      </div>
+      <div class="prop-group"><div class="prop-label">Title (HTML ok — use &lt;em&gt; for accent)</div>
+        <textarea class="prop-textarea" id="pi-ttl" style="min-height:56px" oninput="liveTitle()">${eh(s.title)}</textarea>
+      </div>
+      <div class="prop-group"><div class="prop-label">Body Text</div>
+        <textarea class="prop-textarea" id="pi-bdy" style="min-height:90px" oninput="liveBody()">${eh(stripHtml(s.body))}</textarea>
+      </div>
+      <div class="prop-group"><div class="prop-label">Layout</div>
+        <select class="prop-select" id="pi-lay" onchange="liveLayout()">
+          <option value="simple"${s.layout==='simple'?' selected':''}>Simple</option>
+          <option value="two-col"${s.layout==='two-col'?' selected':''}>Two Column</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- TITLE STYLE -->
+    <div class="prop-section">
+      <div class="prop-section-title">Title Style</div>
+      <div class="prop-group">
+        <div class="prop-label">Font Size: <span id="ttl-size-val">${s.titleSize||58}</span>px</div>
+        <div class="size-row">
+          <input type="range" min="24" max="100" value="${s.titleSize||58}" id="pi-tsize"
+            oninput="document.getElementById('ttl-size-val').textContent=this.value;liveTitleSize()">
+          <span class="size-val" id="ttl-size-val2">${s.titleSize||58}</span>
+        </div>
+      </div>
+      <div class="prop-group">
+        <div class="prop-label">Title Color</div>
+        <div class="color-row">
+          <input type="color" id="pi-tcolor" value="${s.titleColor||'#eaf6ff'}" oninput="liveTitleColor()">
+          <div class="color-presets">
+            ${COLOR_PRESETS.map(c=>`<div class="color-preset" style="background:${c}" title="${c}" onclick="setTitleColor('${c}')"></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BODY STYLE -->
+    <div class="prop-section">
+      <div class="prop-section-title">Body Style</div>
+      <div class="prop-group">
+        <div class="prop-label">Font Size: <span id="bdy-size-val">${s.bodySize||16}</span>px</div>
+        <div class="size-row">
+          <input type="range" min="10" max="36" value="${s.bodySize||16}" id="pi-bsize"
+            oninput="document.getElementById('bdy-size-val').textContent=this.value;liveBodySize()">
+          <span class="size-val" id="bdy-size-val2">${s.bodySize||16}</span>
+        </div>
+      </div>
+      <div class="prop-group">
+        <div class="prop-label">Body Color</div>
+        <div class="color-row">
+          <input type="color" id="pi-bcolor" value="${s.bodyColor||'#a8c8d8'}" oninput="liveBodyColor()">
+          <div class="color-presets">
+            ${COLOR_PRESETS.map(c=>`<div class="color-preset" style="background:${c}" title="${c}" onclick="setBodyColor('${c}')"></div>`).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMAGES -->
+    <div class="prop-section">
+      <div class="prop-section-title">🖼 Background Images</div>
+      <div class="img-manager">
+        <div class="img-grid" id="img-grid">${renderImgGrid(s.images||[])}</div>
+
+        <!-- UPLOAD FROM COMPUTER -->
+        <div class="img-add-area" style="margin-bottom:8px">
+          <p style="color:var(--cyan);margin-bottom:6px;font-size:9px;letter-spacing:1px">📁 UPLOAD FROM YOUR COMPUTER</p>
+          <p style="margin-bottom:8px">Images are embedded in the file — no hosting needed!</p>
+          <label style="display:block;width:100%;padding:9px;background:var(--cyan);color:var(--bg);font-family:var(--fm);font-size:9px;font-weight:600;letter-spacing:2px;text-align:center;cursor:pointer">
+            CHOOSE FILES
+            <input type="file" accept="image/*" multiple style="display:none" onchange="devImgUpload(this)">
+          </label>
+        </div>
+
+        <!-- ADD BY URL -->
+        <div class="img-add-area">
+          <p>— OR paste an image URL —</p>
+          <div class="img-url-row">
+            <input class="img-url-inp" id="img-url-inp" type="text" placeholder="https://example.com/photo.jpg" onkeydown="if(event.key==='Enter')devImgAdd()">
+            <button class="img-url-add" onclick="devImgAdd()">ADD →</button>
+          </div>
+        </div>
+
+        <!-- IMAGE DISPLAY CONTROLS -->
+        <div style="margin-top:10px;background:rgba(0,229,255,.03);border:1px solid var(--border);padding:12px">
+          <div class="prop-label" style="margin-bottom:10px;color:var(--cyan)">IMAGE DISPLAY SETTINGS</div>
+
+          <div class="prop-group">
+            <div class="prop-label">Fit / Size</div>
+            <select class="prop-select" id="pi-img-fit" onchange="liveImgFit()">
+              <option value="cover"${(s.imageFit||'cover')==='cover'?' selected':''}>Cover (fill, crop edges)</option>
+              <option value="contain"${s.imageFit==='contain'?' selected':''}>Contain (show whole image)</option>
+              <option value="100% 100%"${s.imageFit==='100% 100%'?' selected':''}>Stretch (fill exactly)</option>
+              <option value="auto"${s.imageFit==='auto'?' selected':''}>Auto (natural size)</option>
+            </select>
+          </div>
+
+          <div class="prop-group">
+            <div class="prop-label">Position</div>
+            <select class="prop-select" id="pi-img-pos" onchange="liveImgPosition()">
+              <option value="center"${(s.imagePosition||'center')==='center'?' selected':''}>Center</option>
+              <option value="top"${s.imagePosition==='top'?' selected':''}>Top</option>
+              <option value="bottom"${s.imagePosition==='bottom'?' selected':''}>Bottom</option>
+              <option value="left"${s.imagePosition==='left'?' selected':''}>Left</option>
+              <option value="right"${s.imagePosition==='right'?' selected':''}>Right</option>
+              <option value="top left"${s.imagePosition==='top left'?' selected':''}>Top Left</option>
+              <option value="top right"${s.imagePosition==='top right'?' selected':''}>Top Right</option>
+              <option value="bottom left"${s.imagePosition==='bottom left'?' selected':''}>Bottom Left</option>
+              <option value="bottom right"${s.imagePosition==='bottom right'?' selected':''}>Bottom Right</option>
+            </select>
+          </div>
+
+          <div class="prop-group">
+            <div class="prop-label">Opacity: <span id="img-op-val">${Math.round((s.imageOpacity||0.25)*100)}%</span></div>
+            <div class="size-row">
+              <input type="range" min="0.05" max="1" step="0.05" value="${s.imageOpacity||0.25}" id="pi-img-opacity" oninput="liveImgOpacity()">
+            </div>
+          </div>
+        </div>
+
+        <div class="img-interval-row" style="margin-top:8px">
+          <label>Auto-rotate every</label>
+          <input type="number" min="1" max="30" value="${s.imageInterval||4}" id="pi-interval" oninput="liveInterval()">
+          <label>seconds</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- CONTENT IMAGES -->
+    <div class="prop-section">
+      <div class="prop-section-title">🖼 Content Images</div>
+      <div style="font-family:var(--fm);font-size:8px;color:var(--muted);margin-bottom:10px;line-height:1.7;letter-spacing:.5px">
+        These images appear <span style="color:var(--cyan)">inside the slide</span> as actual content — not background. Set size, alignment & caption for each.
+      </div>
+      <div id="cimg-cards">${renderContentImgCards(s.contentImages||[])}</div>
+
+      <!-- Upload from computer -->
+      <label style="display:block;width:100%;padding:8px;background:var(--cyan);color:var(--bg);font-family:var(--fm);font-size:9px;font-weight:600;letter-spacing:2px;text-align:center;cursor:pointer;margin-top:8px">
+        📁 UPLOAD IMAGE FROM COMPUTER
+        <input type="file" accept="image/*" multiple style="display:none" onchange="devCImgUpload(this)">
+      </label>
+
+      <!-- Add by URL -->
+      <div style="margin-top:8px;display:flex;gap:6px">
+        <input class="img-url-inp" id="cimg-url-inp" type="text" placeholder="https://example.com/image.jpg" style="flex:1" onkeydown="if(event.key==='Enter')devCImgAdd()">
+        <button class="img-url-add" onclick="devCImgAdd()">ADD</button>
+      </div>
+    </div>
+
+    <!-- SAVE / DELETE -->
+    <div class="prop-section">
+      <button class="save-btn" onclick="devSaveSlide()">💾 SAVE & SYNC (Ctrl+S)</button>
+      ${APP.slides.length>1?`<button class="del-btn" onclick="devDeleteSlide()">🗑 DELETE SLIDE</button>`:''}
+      <div class="sync-msg" id="sync-msg"></div>
+    </div>
+
+    <!-- EXPORT / IMPORT -->
+    <div class="prop-section">
+      <div class="prop-section-title">Data</div>
+      <div class="exp-row">
+        <button class="exp-btn" onclick="devExport()">↓ BACKUP JSON</button>
+        <button class="exp-btn" onclick="document.getElementById('imp-file').click()">↑ IMPORT JSON</button>
+      </div>
+      <input type="file" id="imp-file" style="display:none" accept=".json" onchange="devImport(this)">
+    </div>`;
+}
+
+function renderImgGrid(images){
+  let html='';
+  images.forEach((url,j)=>{
+    html+=`<div class="img-card">
+      <img src="${eh(url)}" onerror="this.style.display='none'" alt="Slide image ${j+1}">
+      <div class="img-card-actions">
+        <button class="img-card-del" onclick="devImgRemove(${j})">✕ REMOVE</button>
+      </div>
+    </div>`;
+  });
+  if(!images.length){
+    html+=`<div class="img-card-empty" style="grid-column:span 2">No images yet.<br>Add URLs below.</div>`;
+  }
+  return html;
+}
+
+// ============================================================
+// CONTENT IMAGES (appear inside slide as actual content)
+// ============================================================
+function renderContentImgCards(contentImages){
+  if(!contentImages||!contentImages.length){
+    return `<div style="font-family:var(--fm);font-size:8px;color:var(--muted);padding:10px;text-align:center;border:1px dashed var(--border2)">No content images yet. Upload or paste a URL below.</div>`;
+  }
+  return contentImages.map((ci,j)=>`
+    <div class="cimg-card">
+      <img src="${eh(ci.src)}" onerror="this.src=''" alt="img ${j+1}">
+      <div class="cimg-card-controls">
+        <div class="cimg-card-row">
+          <span class="cimg-card-label">Caption</span>
+          <input class="cimg-card-inp" value="${eh(ci.caption||'')}" placeholder="Optional caption…" oninput="updateCImg(${j},'caption',this.value)">
+        </div>
+        <div class="cimg-card-row">
+          <span class="cimg-card-label">Width</span>
+          <input class="cimg-card-inp" type="number" min="60" max="900" value="${ci.width||280}" style="width:64px" oninput="updateCImg(${j},'width',+this.value)">
+          <span class="cimg-card-label" style="margin-left:4px">Height</span>
+          <input class="cimg-card-inp" type="number" min="40" max="700" value="${ci.height||180}" style="width:64px" oninput="updateCImg(${j},'height',+this.value)">
+        </div>
+        <div class="cimg-card-row">
+          <span class="cimg-card-label">Radius</span>
+          <input class="cimg-card-inp" type="number" min="0" max="200" value="${ci.radius||0}" style="width:52px" oninput="updateCImg(${j},'radius',+this.value)">
+          <span class="cimg-card-label" style="margin-left:8px">Align</span>
+          <div class="cimg-align-btns">
+            ${['left','center','right'].map(a=>`<button class="cimg-align-btn${(ci.align||'left')===a?' on':''}" onclick="updateCImg(${j},'align','${a}');refreshCImgCards()">${a[0].toUpperCase()}</button>`).join('')}
+          </div>
+        </div>
+        <div class="cimg-card-row" style="justify-content:flex-end">
+          <button class="cimg-card-del" onclick="removeCImg(${j})">✕ REMOVE</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function refreshCImgCards(){
+  const el=document.getElementById('cimg-cards');
+  if(el) el.innerHTML=renderContentImgCards(APP.slides[devSlIdx].contentImages||[]);
+  refreshSlidePreview();
+}
+
+function updateCImg(j, key, val){
+  if(!APP.slides[devSlIdx].contentImages) APP.slides[devSlIdx].contentImages=[];
+  APP.slides[devSlIdx].contentImages[j][key]=val;
+  refreshSlidePreview();
+}
+
+function removeCImg(j){
+  APP.slides[devSlIdx].contentImages.splice(j,1);
+  refreshCImgCards();
+}
+
+function devCImgAdd(){
+  const inp=document.getElementById('cimg-url-inp'); if(!inp) return;
+  const url=inp.value.trim(); if(!url) return;
+  if(!APP.slides[devSlIdx].contentImages) APP.slides[devSlIdx].contentImages=[];
+  APP.slides[devSlIdx].contentImages.push({src:url,width:280,height:180,radius:0,align:'left',caption:''});
+  inp.value='';
+  refreshCImgCards();
+  syncMsg('🖼 Content image added');
+}
+
+function devCImgUpload(input){
+  const files=Array.from(input.files); if(!files.length) return;
+  if(!APP.slides[devSlIdx].contentImages) APP.slides[devSlIdx].contentImages=[];
+  let loaded=0;
+  files.forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      APP.slides[devSlIdx].contentImages.push({src:e.target.result,width:280,height:180,radius:0,align:'left',caption:''});
+      loaded++;
+      if(loaded===files.length){ refreshCImgCards(); syncMsg(`📁 ${loaded} content image(s) uploaded`); }
+    };
+    r.readAsDataURL(file);
+  });
+}
+
+function refreshSlidePreview(){
+  const s=APP.slides[devSlIdx]; if(!s) return;
+  // live-update the dev card preview to show content images
+  // (just re-render the body section of the card)
+  const bodyEl=document.getElementById('d-body');
+  if(bodyEl) bodyEl.textContent=stripHtml(s.body||'');
+}
+
+// LIVE PREVIEW FUNCTIONS
+function liveLabel(){
+  const v=gv('pi-lbl');
+  document.getElementById('d-lbl').textContent=v;
+  APP.slides[devSlIdx].label=v;
+}
+function liveTitle(){
+  const v=gv('pi-ttl');
+  document.getElementById('d-title').innerHTML=v;
+  APP.slides[devSlIdx].title=v;
+}
+function liveBody(){
+  const v=gv('pi-bdy');
+  document.getElementById('d-body').textContent=v;
+  APP.slides[devSlIdx].body=v;
+}
+function liveLayout(){
+  APP.slides[devSlIdx].layout=gv('pi-lay');
+}
+function liveTitleSize(){
+  const v=parseInt(gv('pi-tsize'))||58;
+  document.getElementById('d-title').style.fontSize=v+'px';
+  const v2=document.getElementById('ttl-size-val2'); if(v2) v2.textContent=v;
+  APP.slides[devSlIdx].titleSize=v;
+}
+function liveTitleColor(){
+  const v=gv('pi-tcolor');
+  document.getElementById('d-title').style.color=v;
+  APP.slides[devSlIdx].titleColor=v;
+}
+function setTitleColor(c){
+  const el=document.getElementById('pi-tcolor'); if(el) el.value=c;
+  document.getElementById('d-title').style.color=c;
+  APP.slides[devSlIdx].titleColor=c;
+}
+function liveBodySize(){
+  const v=parseInt(gv('pi-bsize'))||16;
+  document.getElementById('d-body').style.fontSize=v+'px';
+  const v2=document.getElementById('bdy-size-val2'); if(v2) v2.textContent=v;
+  APP.slides[devSlIdx].bodySize=v;
+}
+function liveBodyColor(){
+  const v=gv('pi-bcolor');
+  document.getElementById('d-body').style.color=v;
+  APP.slides[devSlIdx].bodyColor=v;
+}
+function setBodyColor(c){
+  const el=document.getElementById('pi-bcolor'); if(el) el.value=c;
+  document.getElementById('d-body').style.color=c;
+  APP.slides[devSlIdx].bodyColor=c;
+}
+function liveInterval(){
+  APP.slides[devSlIdx].imageInterval=parseInt(gv('pi-interval'))||4;
+}
+
+function devImgAdd(){
+  const inp=document.getElementById('img-url-inp'); if(!inp) return;
+  const url=inp.value.trim(); if(!url) return;
+  if(!APP.slides[devSlIdx].images) APP.slides[devSlIdx].images=[];
+  APP.slides[devSlIdx].images.push(url);
+  inp.value='';
+  const grid=document.getElementById('img-grid');
+  if(grid) grid.innerHTML=renderImgGrid(APP.slides[devSlIdx].images);
+  syncMsg('🖼 Image added — click SAVE to download');
+}
+function devImgRemove(j){
+  APP.slides[devSlIdx].images.splice(j,1);
+  const grid=document.getElementById('img-grid');
+  if(grid) grid.innerHTML=renderImgGrid(APP.slides[devSlIdx].images);
+  syncMsg('🗑 Image removed — click SAVE to download');
+}
+function devImgUpload(input){
+  const files=Array.from(input.files);
+  if(!files.length) return;
+  if(!APP.slides[devSlIdx].images) APP.slides[devSlIdx].images=[];
+  let loaded=0;
+  files.forEach(file=>{
+    const r=new FileReader();
+    r.onload=e=>{
+      APP.slides[devSlIdx].images.push(e.target.result);
+      loaded++;
+      if(loaded===files.length){
+        const grid=document.getElementById('img-grid');
+        if(grid) grid.innerHTML=renderImgGrid(APP.slides[devSlIdx].images);
+        syncMsg(`📁 ${loaded} image(s) uploaded — click SAVE to download`);
+      }
+    };
+    r.readAsDataURL(file);
+  });
+}
+function liveImgFit(){
+  const v=gv('pi-img-fit'); APP.slides[devSlIdx].imageFit=v;
+  document.querySelectorAll('.pm-img-slide').forEach(el=>el.style.backgroundSize=v);
+}
+function liveImgOpacity(){
+  const v=parseFloat(gv('pi-img-opacity'))||0.25;
+  APP.slides[devSlIdx].imageOpacity=v;
+  document.getElementById('img-op-val').textContent=Math.round(v*100)+'%';
+  document.querySelectorAll('.pm-img-slide.active').forEach(el=>el.style.opacity=v);
+}
+function liveImgPosition(){
+  const v=gv('pi-img-pos'); APP.slides[devSlIdx].imagePosition=v;
+  document.querySelectorAll('.pm-img-slide').forEach(el=>el.style.backgroundPosition=v);
+}
+
+async function devSaveSlide(){
+  const s=APP.slides[devSlIdx];
+  s.label   = gv('pi-lbl');
+  s.title   = gv('pi-ttl');
+  s.body    = gv('pi-bdy');
+  s.layout  = gv('pi-lay');
+  s.titleSize  = parseInt(gv('pi-tsize'))||58;
+  s.titleColor = gv('pi-tcolor');
+  s.bodySize   = parseInt(gv('pi-bsize'))||16;
+  s.bodyColor  = gv('pi-bcolor');
+  s.imageInterval = parseInt(gv('pi-interval'))||4;
+  devRenderList();
+  renderSlideThumbs();
+  initApp();
+  syncMsg('💾 Saving...');
+  await saveSlides();
+  if(window._FB_READY){
+    syncMsg('✅ Saved — visible on ALL computers instantly!');
+  } else {
+    syncMsg('✅ Saved. Connect Firebase for live sync → see top banner.');
+  }
+}
+
+async function devDeleteSlide(){
+  if(APP.slides.length<=1){ alert('Cannot delete the last slide!'); return; }
+  if(!confirm('Delete slide "'+APP.slides[devSlIdx].label+'"?')) return;
+  APP.slides.splice(devSlIdx,1);
+  devSlIdx=Math.max(0,devSlIdx-1);
+  devRenderList(); devPickSlide(devSlIdx);
+  renderSlideThumbs();
+  await saveSlides();
+  syncMsg(window._FB_READY ? '🗑 Deleted — synced to all computers' : '🗑 Deleted');
+}
+
+function devAddSlide(){
+  APP.slides.push({
+    id:Date.now(),label:'NEW SLIDE',title:'New <em>Slide</em>',
+    body:'Add your content here. Edit the title, body, colors and images.',
+    layout:'simple',titleSize:58,titleColor:'#eaf6ff',bodySize:16,bodyColor:'#a8c8d8',
+    images:[],imageInterval:4,imageFit:'cover',imageOpacity:0.25,imagePosition:'center'
+  });
+  devSlIdx=APP.slides.length-1;
+  devRenderList(); devPickSlide(devSlIdx);
+  renderSlideThumbs(); initApp();
+  syncMsg('✨ Slide added — click SAVE to download updated file');
+}
+
+function devExport(){
+  const d=JSON.stringify({slides:APP.slides,members:APP.members},null,2);
+  Object.assign(document.createElement('a'),{
+    href:URL.createObjectURL(new Blob([d],{type:'application/json'})),
+    download:'computex-backup.json'
+  }).click();
+  syncMsg('📦 Backup downloaded');
+}
+function devImport(inp){
+  const f=inp.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const p=JSON.parse(e.target.result);
+      if(p.slides){ APP.slides=p.slides; }
+      if(p.members){ APP.members=p.members; }
+      initDev(); renderSlideThumbs(); initApp();
+      syncMsg('✓ Data imported! Click SAVE to bake into the file.');
+    }catch(err){ alert('Invalid JSON file.'); }
+  };
+  r.readAsText(f);
+}
+function syncMsg(msg){ const el=document.getElementById('sync-msg'); if(!el) return; el.textContent=msg; setTimeout(()=>{if(el)el.textContent='';},3500); }
+function gv(id){ const e=document.getElementById(id); return e?e.value:''; }
+function eh(s=''){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>
